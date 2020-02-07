@@ -5,12 +5,13 @@ import os
 from datetime import datetime, timedelta
 from subprocess import check_output, CalledProcessError
 import hashlib
+from sys import argv
 
+DEBUG = argv[1] == '--debug'
 DIRECTORY = '/tmp'
 CACHE_TIME: timedelta = timedelta(seconds=5)
 ANCIENT_TIME = datetime(1993, 2, 13, 0, 0, 0, 0)
-
-APP_DIR = '/app'
+APP_DIR = '/app' if not DEBUG else '.'
 
 
 def absolute(filename_: str) -> str:
@@ -22,7 +23,7 @@ def checksum(url: str) -> str:
 
 
 def file_data(url: str) -> (str, str):
-    return str(datetime.now()), checksum(url)
+    return str(datetime.now().timestamp()), checksum(url)
 
 
 def retrieve_data(filename_: str) -> t.Optional[t.Tuple[str, str]]:
@@ -46,11 +47,14 @@ def already_saved(hash_: str) -> t.Generator[str, None, None]:
 def valid_cache(url: str) -> t.Optional[str]:
     time, hash_ = file_data(url)
     try:
-        latest = next((f for f in sorted(already_saved(hash_), key=lambda f: retrieve_data(absolute(f[1])) or ANCIENT_TIME, reverse=True)))
+        latest = next((f for f in sorted(
+            already_saved(hash_),
+            key=lambda f: retrieve_data(absolute(f[1])) or ANCIENT_TIME, reverse=True,
+        )))
     except StopIteration:
         return None
 
-    delta = datetime.fromisoformat(time) - datetime.fromisoformat(retrieve_data(latest)[0])
+    delta = datetime.fromtimestamp(float(time)) - datetime.fromtimestamp(float(retrieve_data(latest)[0]))
 
     return latest if delta <= CACHE_TIME else None
 
@@ -68,17 +72,17 @@ def create_new_handle(url: str) -> t.Optional[str]:
     command = [
             os.path.join(APP_DIR, 'goodls_linux_amd64'),
             '-u',
-            f'"{url}"',
+            url,
             '-e',
             'csv',
             '--overwrite',
             '--directory',
             DIRECTORY,
             '--filename',
-            f'"{filename_}"',
+            filename_,
         ]
     try:
-        check_output(command)
+        print('DEBUG: ', check_output(command))
     except CalledProcessError:
         print(' '.join(command))
         return None
@@ -88,7 +92,6 @@ def create_new_handle(url: str) -> t.Optional[str]:
 
 def get_gdrive_contents(url: str) -> t.Optional[str]:
     path = get_file_handle(url)
-
     if not path:
         return 'null'
     with open(path, 'r') as f:
@@ -100,4 +103,11 @@ app = Flask(__name__)
 
 @app.route('/<path:url>')
 def file(url: str):
+    if url.endswith('edit'):
+        url = url + '?usp=sharing'
     return get_gdrive_contents(url or '')
+
+
+if __name__ == '__main__':
+    url_ = argv[2]
+    print(get_gdrive_contents(url_))
