@@ -7,11 +7,16 @@ from subprocess import check_output, CalledProcessError
 import hashlib
 from sys import argv
 
-DEBUG = argv[1] == '--debug'
+DEBUG = bool(os.environ.get('DEBUG'))
 DIRECTORY = '/tmp'
 CACHE_TIME: timedelta = timedelta(seconds=5)
 ANCIENT_TIME = datetime(1993, 2, 13, 0, 0, 0, 0)
 APP_DIR = '/app' if not DEBUG else '.'
+
+
+def dprint(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
 
 
 def absolute(filename_: str) -> str:
@@ -65,7 +70,7 @@ def get_file_handle(url: str) -> str:
 
 
 def create_new_handle(url: str) -> t.Optional[str]:
-    print(f'DEBUG creating new file for {url}')
+    dprint(f'DEBUG creating new file for {url}')
     filename_ = filename(url)
     path = absolute(filename_)
 
@@ -81,10 +86,13 @@ def create_new_handle(url: str) -> t.Optional[str]:
             '--filename',
             filename_,
         ]
+
+    command = ' '.join(command)
+
+    print('[DEBUG]', command)
     try:
-        print('DEBUG: ', check_output(command))
+        dprint('DEBUG: ', check_output(command, shell=True))
     except CalledProcessError:
-        print(' '.join(command))
         return None
 
     return path
@@ -101,10 +109,13 @@ def get_gdrive_contents(url: str) -> t.Optional[str]:
 app = Flask(__name__)
 
 
-@app.route('/<path:url>')
+@app.route('/document/<path:url>')
 def file(url: str):
+    url = url.strip()
     if url.endswith('edit'):
-        url = url + '?usp=sharing'
+        url = url + '?usp\\=sharing'
+
+    print('[DEBUG]', url)
     return get_gdrive_contents(url or '')
 
 
