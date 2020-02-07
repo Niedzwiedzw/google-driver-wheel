@@ -10,6 +10,8 @@ DIRECTORY = '/tmp'
 CACHE_TIME: timedelta = timedelta(seconds=5)
 ANCIENT_TIME = datetime(1993, 2, 13, 0, 0, 0, 0)
 
+APP_DIR = '/app'
+
 
 def absolute(filename_: str) -> str:
     return os.path.join(DIRECTORY, filename_)
@@ -63,20 +65,22 @@ def create_new_handle(url: str) -> t.Optional[str]:
     filename_ = filename(url)
     path = absolute(filename_)
 
-    try:
-        check_output([
-            './goodls_linux_amd64',
+    command = [
+            os.path.join(APP_DIR, 'goodls_linux_amd64'),
             '-u',
-            url,
+            f'"{url}"',
             '-e',
             'csv',
             '--overwrite',
             '--directory',
             DIRECTORY,
             '--filename',
-            filename_,
-        ])
+            f'"{filename_}"',
+        ]
+    try:
+        check_output(command)
     except CalledProcessError:
+        print(' '.join(command))
         return None
 
     return path
