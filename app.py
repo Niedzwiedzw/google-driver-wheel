@@ -1,4 +1,6 @@
-from flask import Flask
+from flask import Flask, jsonify
+from csv import reader
+from json import dumps
 
 import typing as t
 import os
@@ -89,21 +91,22 @@ def create_new_handle(url: str) -> t.Optional[str]:
 
     command = ' '.join(command)
 
-    print('[DEBUG]', command)
+    dprint('[DEBUG]', command)
     try:
-        print('DEBUG: ', check_output(command, shell=True))
+        dprint('DEBUG: ', check_output(command, shell=True))
     except CalledProcessError:
         return None
 
     return path
 
 
-def get_gdrive_contents(url: str) -> t.Optional[str]:
+def get_gdrive_contents(url: str) -> t.Optional[t.List[t.List[str]]]:
     path = get_file_handle(url)
     if not path:
-        return 'null'
+        return [[]]
     with open(path, 'r') as f:
-        return f.read()
+        r = reader(f)
+        return list(map(list, r))
 
 
 app = Flask(__name__)
@@ -115,8 +118,8 @@ def file(url: str):
     if url.endswith('edit'):
         url = url + '?usp\\=sharing'
 
-    print('[DEBUG]', url)
-    return get_gdrive_contents(url or '')
+    dprint('[DEBUG]', url)
+    return jsonify(get_gdrive_contents(url or ''))
 
 
 if __name__ == '__main__':
