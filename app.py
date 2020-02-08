@@ -100,7 +100,7 @@ def create_new_handle(url: str) -> t.Optional[str]:
     return path
 
 
-def get_gdrive_contents(url: str) -> t.Optional[t.List[t.List[str]]]:
+def get_gdrive_contents(url: str) -> t.List[t.List[str]]:
     path = get_file_handle(url)
     if not path:
         return [[]]
@@ -110,6 +110,13 @@ def get_gdrive_contents(url: str) -> t.Optional[t.List[t.List[str]]]:
 
 
 app = Flask(__name__)
+
+
+@app.after_request  # https://stackoverflow.com/a/45818284/9014011
+def after_request(response):
+    header = response.headers
+    header['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 @app.route('/document/<path:url>')
