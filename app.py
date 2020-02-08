@@ -3,7 +3,7 @@ from flask import Flask
 import typing as t
 import os
 from datetime import datetime, timedelta
-from subprocess import check_output, CalledProcessError
+from subprocess import check_output, CalledProcessError, run
 import hashlib
 from sys import argv
 
@@ -91,7 +91,7 @@ def create_new_handle(url: str) -> t.Optional[str]:
 
     print('[DEBUG]', command)
     try:
-        dprint('DEBUG: ', check_output(command, shell=True))
+        print('DEBUG: ', check_output(command, shell=True))
     except CalledProcessError:
         return None
 
